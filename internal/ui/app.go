@@ -204,6 +204,21 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.notifs, cmd = m.notifs.Update(msg)
 		return m, cmd
 
+	case client.FriendRequestAcceptFailedMsg:
+		// inFlight 解除を notifs に通知し、エラーを表示する
+		var cmd tea.Cmd
+		m.notifs, cmd = m.notifs.Update(msg)
+		m.showError(msg.Err)
+		m.distributeSize()
+		return m, tea.Batch(cmd, m.scheduleClearErr())
+
+	case client.FriendRequestRejectFailedMsg:
+		var cmd tea.Cmd
+		m.notifs, cmd = m.notifs.Update(msg)
+		m.showError(msg.Err)
+		m.distributeSize()
+		return m, tea.Batch(cmd, m.scheduleClearErr())
+
 	case AcceptRequestMsg:
 		return m, m.vrc.AcceptFriendRequest(msg.NotifID)
 

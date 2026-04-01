@@ -51,6 +51,20 @@ type FriendRequestAcceptedMsg struct{ NotifID string }
 // FriendRequestRejectedMsg はフレンドリクエスト拒否成功時のメッセージ。
 type FriendRequestRejectedMsg struct{ NotifID string }
 
+// FriendRequestAcceptFailedMsg はフレンドリクエスト承認失敗時のメッセージ。
+// NotifID を含むため、UI 側で inFlight ガードを解除できる。
+type FriendRequestAcceptFailedMsg struct {
+	NotifID string
+	Err     error
+}
+
+// FriendRequestRejectFailedMsg はフレンドリクエスト拒否失敗時のメッセージ。
+// NotifID を含むため、UI 側で inFlight ガードを解除できる。
+type FriendRequestRejectFailedMsg struct {
+	NotifID string
+	Err     error
+}
+
 // VRCClient は vrcgo クライアントのラッパー。
 type VRCClient struct {
 	api    *vrcapi.Client
@@ -198,26 +212,28 @@ func (c *VRCClient) FetchNotifs() tea.Cmd {
 }
 
 // AcceptFriendRequest はフレンドリクエストを承認する tea.Cmd。
+// 失敗時は FriendRequestAcceptFailedMsg を返す（NotifID 付き）。
 func (c *VRCClient) AcceptFriendRequest(notifID string) tea.Cmd {
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 		defer cancel()
 
 		if _, err := c.api.AcceptFriendRequest(ctx, notifID); err != nil {
-			return ErrMsg{Err: err, IsAuth: isAuthError(err)}
+			return FriendRequestAcceptFailedMsg{NotifID: notifID, Err: err}
 		}
 		return FriendRequestAcceptedMsg{NotifID: notifID}
 	}
 }
 
 // RejectFriendRequest はフレンドリクエストを拒否する tea.Cmd。
+// 失敗時は FriendRequestRejectFailedMsg を返す（NotifID 付き）。
 func (c *VRCClient) RejectFriendRequest(notifID string) tea.Cmd {
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 		defer cancel()
 
 		if _, err := c.api.RejectFriendRequest(ctx, notifID); err != nil {
-			return ErrMsg{Err: err, IsAuth: isAuthError(err)}
+			return FriendRequestRejectFailedMsg{NotifID: notifID, Err: err}
 		}
 		return FriendRequestRejectedMsg{NotifID: notifID}
 	}

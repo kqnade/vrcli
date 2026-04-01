@@ -129,6 +129,16 @@ func (m NotifsModel) Update(msg tea.Msg) (NotifsModel, tea.Cmd) {
 		delete(m.inFlight, msg.NotifID)
 		return m, m.removeNotif(msg.NotifID)
 
+	case client.FriendRequestAcceptFailedMsg:
+		// API エラー時も inFlight を解除してリトライを許可する
+		delete(m.inFlight, msg.NotifID)
+		return m, nil
+
+	case client.FriendRequestRejectFailedMsg:
+		// API エラー時も inFlight を解除してリトライを許可する
+		delete(m.inFlight, msg.NotifID)
+		return m, nil
+
 	case tea.KeyMsg:
 		if !m.focused {
 			return m, nil

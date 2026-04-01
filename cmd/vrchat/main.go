@@ -30,10 +30,11 @@ func main() {
 
 func rootCmd() *cobra.Command {
 	root := &cobra.Command{
-		Use:          "vrchat",
-		Short:        "VRChat TUI ダッシュボード",
-		SilenceUsage: true,
-		RunE:         runTUI,
+		Use:           "vrchat",
+		Short:         "VRChat TUI ダッシュボード",
+		SilenceUsage:  true,
+		SilenceErrors: true, // main() でまとめて出力するため Cobra の二重表示を抑制
+		RunE:          runTUI,
 	}
 	root.AddCommand(authCmd(), versionCmd())
 	return root

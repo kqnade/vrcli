@@ -174,9 +174,19 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.distributeSize()
 			return m, tea.Batch(m.scheduleClearErr(), tea.Quit)
 		}
+		// 一時的なエラーでもポーリングを継続する
+		// （FriendsMsg/NotifsMsg 成功時だけ次の Tick が張られるため、
+		//   ErrMsg が返った場合は自前で再スケジュールしないと更新が止まる）
 		m.showError(msg.Err)
 		m.distributeSize()
-		return m, m.scheduleClearErr()
+		cmds := []tea.Cmd{m.scheduleClearErr()}
+		if m.friendsPolling {
+			cmds = append(cmds, m.pollFriends())
+		}
+		if m.notifsPolling {
+			cmds = append(cmds, m.pollNotifs())
+		}
+		return m, tea.Batch(cmds...)
 
 	case client.StatusUpdatedMsg:
 		m.statusModal.Close()
@@ -321,12 +331,7 @@ func (m AppModel) renderHeader() string {
 		statusStr = "..."
 	}
 	title := fmt.Sprintf("vrchat-tui | %s %s %s", m.currentUser, statusEmoji, statusStr)
-	return lipgloss.NewStyle().
-		Width(m.width).
-		Foreground(lipgloss.Color("#FFFFFF")).
-		Background(lipgloss.Color("#1E1B4B")).
-		Padding(0, 1).
-		Render(title)
+	return m.styles.Header.Width(m.width).Render(title)
 }
 
 func (m AppModel) renderFooter() string {

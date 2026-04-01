@@ -2,8 +2,6 @@ module github.com/kqnade/vrcli
 
 go 1.25.5
 
-replace github.com/kqnade/vrcgo => ../vrcgo
-
 require (
 	github.com/BurntSushi/toml v1.5.0
 	github.com/charmbracelet/bubbles v0.20.0

@@ -74,6 +74,12 @@ func TestFromLimitedUser_Fields(t *testing.T) {
 	if f.TrustRank != client.TrustKnownUser {
 		t.Errorf("TrustRank = %v, want TrustKnownUser", f.TrustRank)
 	}
+	if f.Location != u.Location {
+		t.Errorf("Location = %q, want %q", f.Location, u.Location)
+	}
+	if f.LastPlatform != u.LastPlatform {
+		t.Errorf("LastPlatform = %q, want %q", f.LastPlatform, u.LastPlatform)
+	}
 }
 
 func TestFromNotification_Fields(t *testing.T) {

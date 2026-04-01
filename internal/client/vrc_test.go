@@ -44,6 +44,23 @@ func TestNewVRCClient(t *testing.T) {
 	}
 }
 
+func TestUpdateStatusWithoutUserID(t *testing.T) {
+	c, err := client.New("vrchat-tui/test")
+	if err != nil {
+		t.Fatalf("New() error: %v", err)
+	}
+	// userID 未設定のまま UpdateStatus を呼ぶ → ErrMsg が返るはず
+	cmd := c.UpdateStatus("active", "")
+	msg := cmd()
+	errMsg, ok := msg.(client.ErrMsg)
+	if !ok {
+		t.Fatalf("expected ErrMsg, got %T", msg)
+	}
+	if errMsg.Err == nil {
+		t.Error("ErrMsg.Err should not be nil when userID is empty")
+	}
+}
+
 func TestSaveSessionCreatesDir(t *testing.T) {
 	c, err := client.New("vrchat-tui/test")
 	if err != nil {

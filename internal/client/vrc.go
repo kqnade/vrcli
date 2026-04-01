@@ -134,7 +134,7 @@ func (c *VRCClient) AuthenticateSync(username, password, totp string) error {
 func (c *VRCClient) Authenticate(username, password, totp string) tea.Cmd {
 	return func() tea.Msg {
 		if err := c.AuthenticateSync(username, password, totp); err != nil {
-			return ErrMsg{Err: err, IsAuth: true}
+			return ErrMsg{Err: err, IsAuth: isAuthError(err)}
 		}
 		return c.CheckSession()()
 	}
@@ -210,8 +210,13 @@ func (c *VRCClient) RejectFriendRequest(notifID string) tea.Cmd {
 }
 
 // UpdateStatus はユーザーステータスを更新する tea.Cmd。
+// CheckSession または Authenticate を先に呼び出して userID を設定しておく必要がある。
 func (c *VRCClient) UpdateStatus(status, desc string) tea.Cmd {
 	return func() tea.Msg {
+		if c.userID == "" {
+			return ErrMsg{Err: fmt.Errorf("client: userID not set; call CheckSession first")}
+		}
+
 		ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 		defer cancel()
 

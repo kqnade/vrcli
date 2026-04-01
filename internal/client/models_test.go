@@ -134,7 +134,7 @@ func TestUserStatusEmoji(t *testing.T) {
 		emoji  string
 	}{
 		{client.StatusActive, "🟢"},
-		{client.StatusJoinMe, "🟢"},
+		{client.StatusJoinMe, "🔵"},
 		{client.StatusAskMe, "🟡"},
 		{client.StatusBusy, "🔴"},
 		{client.StatusOffline, "⚫"},

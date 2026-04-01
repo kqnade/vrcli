@@ -1,0 +1,8 @@
+# Codex local config
+.codex
+
+# Build output
+vrchat
+
+# Go
+*.test

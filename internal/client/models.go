@@ -44,8 +44,10 @@ const (
 // Emoji はステータスに対応する絵文字を返す。
 func (s UserStatus) Emoji() string {
 	switch s {
-	case StatusActive, StatusJoinMe:
+	case StatusActive:
 		return "🟢"
+	case StatusJoinMe:
+		return "🔵"
 	case StatusAskMe:
 		return "🟡"
 	case StatusBusy:

@@ -85,7 +85,7 @@ vrchat-tui/
 - カラーパレットは `internal/ui/styles.go` に集約する
 - ダークターミナル前提。ライトテーマ考慮は不要
 - Trust Rank は色で区別する（Visitor=灰、New User=青、User=緑、Known User=橙、Trusted=紫、Friend=黄）
-- ステータスインジケーター：🟢 Online / 🟡 Ask Me / 🔴 Busy / ⚫ Offline
+- ステータスインジケーター：🟢 Online / 🔵 Join Me / 🟡 Ask Me / 🔴 Busy / ⚫ Offline
 
 ---
 

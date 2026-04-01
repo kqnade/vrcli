@@ -330,11 +330,14 @@ func (m AppModel) renderHeader() string {
 }
 
 func (m AppModel) renderFooter() string {
-	if m.showHelp {
-		return m.help.FullHelpView(m.keys.FullHelp())
-	}
+	var parts []string
 	if m.errState != nil {
-		return m.styles.ErrorBar.Render("Error: " + m.errState.err.Error())
+		parts = append(parts, m.styles.ErrorBar.Render("Error: "+m.errState.err.Error()))
 	}
-	return m.styles.StatusBar.Render(m.help.ShortHelpView(m.keys.ShortHelp()))
+	if m.showHelp {
+		parts = append(parts, m.help.FullHelpView(m.keys.FullHelp()))
+	} else {
+		parts = append(parts, m.styles.StatusBar.Render(m.help.ShortHelpView(m.keys.ShortHelp())))
+	}
+	return lipgloss.JoinVertical(lipgloss.Left, parts...)
 }

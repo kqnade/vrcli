@@ -67,7 +67,7 @@ func (d notifDelegate) Render(w io.Writer, m list.Model, index int, item list.It
 	}
 
 	if index == m.Index() {
-		title = d.styles.SelectedItem.Render(ni.Title())
+		title = d.styles.SelectedItem.Render(title)
 		desc = lipgloss.NewStyle().Foreground(lipgloss.Color("#CCCCCC")).Render(desc)
 	} else {
 		desc = d.styles.NormalItem.Render(desc)
@@ -123,13 +123,11 @@ func (m NotifsModel) Update(msg tea.Msg) (NotifsModel, tea.Cmd) {
 
 	case client.FriendRequestAcceptedMsg:
 		delete(m.inFlight, msg.NotifID)
-		m.removeNotif(msg.NotifID)
-		return m, nil
+		return m, m.removeNotif(msg.NotifID)
 
 	case client.FriendRequestRejectedMsg:
 		delete(m.inFlight, msg.NotifID)
-		m.removeNotif(msg.NotifID)
-		return m, nil
+		return m, m.removeNotif(msg.NotifID)
 
 	case tea.KeyMsg:
 		if !m.focused {
@@ -199,8 +197,8 @@ func (m NotifsModel) selectedNotif() *client.Notif {
 	return &n
 }
 
-// removeNotif は指定 ID の通知をリストから除去する。
-func (m *NotifsModel) removeNotif(notifID string) {
+// removeNotif は指定 ID の通知をリストから除去し、list から返る Cmd を返す。
+func (m *NotifsModel) removeNotif(notifID string) tea.Cmd {
 	items := m.list.Items()
 	newItems := make([]list.Item, 0, len(items))
 	for _, item := range items {
@@ -209,5 +207,5 @@ func (m *NotifsModel) removeNotif(notifID string) {
 			newItems = append(newItems, item)
 		}
 	}
-	m.list.SetItems(newItems)
+	return m.list.SetItems(newItems)
 }

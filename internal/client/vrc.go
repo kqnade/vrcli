@@ -162,7 +162,7 @@ func (c *VRCClient) FetchFriends() tea.Cmd {
 
 		users, err := c.api.GetFriends(ctx, shared.GetFriendsOptions{
 			Offline: false,
-			N:       100,
+			N:       100, // VRChat API の最大値
 		})
 		if err != nil {
 			return ErrMsg{Err: err, IsAuth: isAuthError(err)}
@@ -183,7 +183,7 @@ func (c *VRCClient) FetchNotifs() tea.Cmd {
 		defer cancel()
 
 		notifs, err := c.api.GetNotifications(ctx, shared.GetNotificationsOptions{
-			N: 100,
+			N: 100, // VRChat API の最大値
 		})
 		if err != nil {
 			return ErrMsg{Err: err, IsAuth: isAuthError(err)}
@@ -257,6 +257,8 @@ func isAuthError(err error) bool {
 }
 
 // isTwoFactorError は err が 2FA 要求エラーかどうかを判定する。
+// vrcgo は 2FA エラーを型付きエラーとして公開していないため、エラーメッセージの
+// 文字列マッチで判定する。vrcgo のエラーメッセージが変わった場合は更新が必要。
 func isTwoFactorError(err error) bool {
 	return err != nil && strings.Contains(err.Error(), "two-factor authentication required")
 }

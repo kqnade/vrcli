@@ -16,35 +16,39 @@ func TestDefaultKeyMapShortHelp(t *testing.T) {
 	if len(bindings) == 0 {
 		t.Error("ShortHelp() should return non-empty bindings")
 	}
-	// j/k が含まれることを確認
-	found := false
+	// j と k がそれぞれ含まれることを確認（OR ではなく個別にチェック）
+	foundJ, foundK := false, false
 	for _, b := range bindings {
 		for _, k := range b.Keys() {
-			if k == "j" || k == "k" {
-				found = true
+			if k == "j" {
+				foundJ = true
+			}
+			if k == "k" {
+				foundK = true
 			}
 		}
 	}
-	if !found {
-		t.Error("ShortHelp() should include j/k navigation keys")
+	if !foundJ {
+		t.Error("ShortHelp() should include 'j' navigation key")
+	}
+	if !foundK {
+		t.Error("ShortHelp() should include 'k' navigation key")
 	}
 }
 
 func TestDefaultKeyMapFullHelp(t *testing.T) {
 	km := ui.DefaultKeyMap
 	groups := km.FullHelp()
-	if len(groups) == 0 {
-		t.Error("FullHelp() should return non-empty groups")
+
+	// FullHelp は 4 グループ: navigation(3), pane(2), actions(4), notif(3)
+	wantGroupSizes := []int{3, 2, 4, 3}
+	if len(groups) != len(wantGroupSizes) {
+		t.Fatalf("FullHelp() group count = %d, want %d", len(groups), len(wantGroupSizes))
 	}
-	totalBindings := 0
-	for _, g := range groups {
-		totalBindings += len(g)
-	}
-	// FullHelp は現在 4 グループ・合計 12 バインディングを定義している
-	// (navigation:3, pane:2, actions:4, notif:3)
-	const wantBindings = 12
-	if totalBindings != wantBindings {
-		t.Errorf("FullHelp() total bindings = %d, want %d", totalBindings, wantBindings)
+	for i, want := range wantGroupSizes {
+		if got := len(groups[i]); got != want {
+			t.Errorf("FullHelp() group[%d] size = %d, want %d", i, got, want)
+		}
 	}
 }
 

@@ -117,11 +117,21 @@ func TestStatusModalIgnoreKeyWhenHidden(t *testing.T) {
 	}
 }
 
-func TestStatusChoicesLength(t *testing.T) {
-	// StatusChoices は active/joinMe/askMe/busy の 4 つ（offline は除外）
-	// この数を変える場合はモーダルの UI レイアウトも合わせて確認すること
-	const wantLen = 4
-	if len(ui.StatusChoices) != wantLen {
-		t.Errorf("StatusChoices length = %d, want %d", len(ui.StatusChoices), wantLen)
+func TestStatusChoicesContents(t *testing.T) {
+	// StatusChoices は active/joinMe/askMe/busy の順（offline は除外）
+	// この順序を変える場合はモーダルの UI レイアウトも合わせて確認すること
+	want := []client.UserStatus{
+		client.StatusActive,
+		client.StatusJoinMe,
+		client.StatusAskMe,
+		client.StatusBusy,
+	}
+	if len(ui.StatusChoices) != len(want) {
+		t.Fatalf("StatusChoices length = %d, want %d", len(ui.StatusChoices), len(want))
+	}
+	for i, w := range want {
+		if ui.StatusChoices[i] != w {
+			t.Errorf("StatusChoices[%d] = %q, want %q", i, ui.StatusChoices[i], w)
+		}
 	}
 }

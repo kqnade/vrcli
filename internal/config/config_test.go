@@ -85,8 +85,79 @@ func TestSaveCreatesDir(t *testing.T) {
 		t.Fatalf("Save() should create missing directories: %v", err)
 	}
 
-	cfgPath, _ := config.ConfigDir()
+	cfgPath, err := config.ConfigDir()
+	if err != nil {
+		t.Fatalf("ConfigDir() error: %v", err)
+	}
 	if _, err := os.Stat(cfgPath); os.IsNotExist(err) {
 		t.Error("Save() did not create config directory")
+	}
+}
+
+func TestLoadInvalidTOML(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", dir)
+
+	// 壊れた TOML を書き込む
+	cfgDir := filepath.Join(dir, "vrchat-tui")
+	if err := os.MkdirAll(cfgDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(cfgDir, "config.toml"), []byte("[[invalid toml"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := config.Load(); err == nil {
+		t.Error("Load() with invalid TOML should return error")
+	}
+}
+
+func TestLoadUnknownKey(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", dir)
+
+	cfgDir := filepath.Join(dir, "vrchat-tui")
+	if err := os.MkdirAll(cfgDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	content := "[app]\nunknown_key = true\n"
+	if err := os.WriteFile(filepath.Join(cfgDir, "config.toml"), []byte(content), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := config.Load(); err == nil {
+		t.Error("Load() with unknown key should return error")
+	}
+}
+
+func TestSaveFilePermissions(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", dir)
+
+	if err := config.Save(config.Default()); err != nil {
+		t.Fatalf("Save() error: %v", err)
+	}
+
+	cfgDir, err := config.ConfigDir()
+	if err != nil {
+		t.Fatalf("ConfigDir() error: %v", err)
+	}
+
+	// ディレクトリは 0700
+	info, err := os.Stat(cfgDir)
+	if err != nil {
+		t.Fatalf("Stat(cfgDir) error: %v", err)
+	}
+	if perm := info.Mode().Perm(); perm != 0o700 {
+		t.Errorf("config dir perm = %o, want 0700", perm)
+	}
+
+	// ファイルは 0600
+	info, err = os.Stat(filepath.Join(cfgDir, "config.toml"))
+	if err != nil {
+		t.Fatalf("Stat(config.toml) error: %v", err)
+	}
+	if perm := info.Mode().Perm(); perm != 0o600 {
+		t.Errorf("config.toml perm = %o, want 0600", perm)
 	}
 }

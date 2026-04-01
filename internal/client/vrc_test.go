@@ -3,6 +3,7 @@ package client_test
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
 	"testing"
 
 	"github.com/kqnade/vrcgo/shared"
@@ -67,7 +68,7 @@ func TestSaveSessionCreatesDir(t *testing.T) {
 		t.Fatalf("New() error: %v", err)
 	}
 
-	path := t.TempDir() + "/nested/dir/session.json"
+	path := filepath.Join(t.TempDir(), "nested", "dir", "session.json")
 	// SaveCookies はファイルに書くが、空セッションでも dir は作成される
 	if err := c.SaveSession(path); err != nil {
 		t.Fatalf("SaveSession() error: %v", err)

@@ -69,7 +69,15 @@ func New(userAgent string) (*VRCClient, error) {
 }
 
 // LoadSession はセッション Cookie ファイルを読み込む。
+// 既存ファイル・ディレクトリのパーミッションが緩い場合は 0600/0700 に矯正する。
 func (c *VRCClient) LoadSession(path string) error {
+	dir := filepath.Dir(path)
+	if err := os.Chmod(dir, 0o700); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("client: chmod session dir: %w", err)
+	}
+	if err := os.Chmod(path, 0o600); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("client: chmod session file: %w", err)
+	}
 	if err := c.api.LoadCookies(path); err != nil {
 		return fmt.Errorf("client: load session: %w", err)
 	}
@@ -77,11 +85,14 @@ func (c *VRCClient) LoadSession(path string) error {
 }
 
 // SaveSession はセッション Cookie をファイルに保存する。
-// 必要に応じてディレクトリを作成する。保存後にファイル権限を 0600 に設定する。
+// 必要に応じてディレクトリを作成し、ファイルとディレクトリの権限を 0600/0700 に設定する。
 func (c *VRCClient) SaveSession(path string) error {
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return fmt.Errorf("client: create session dir: %w", err)
+	}
+	if err := os.Chmod(dir, 0o700); err != nil {
+		return fmt.Errorf("client: chmod session dir: %w", err)
 	}
 	if err := c.api.SaveCookies(path); err != nil {
 		return fmt.Errorf("client: save session: %w", err)

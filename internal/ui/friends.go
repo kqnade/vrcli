@@ -45,7 +45,8 @@ func (d friendDelegate) Render(w io.Writer, m list.Model, index int, item list.I
 	desc := fi.Description()
 
 	if index == m.Index() {
-		name = d.styles.SelectedItem.Render(fi.Title())
+		// 選択時は SelectedItem のスタイルを維持しつつ TrustRank カラーを前景色に適用する
+		name = d.styles.SelectedItem.Foreground(nameColor).Render(fi.Title())
 		desc = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#CCCCCC")).
 			Render(desc)

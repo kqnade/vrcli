@@ -59,6 +59,10 @@ type AppModel struct {
 	errState   *errState
 	errSeqNext int
 	showHelp   bool
+
+	// ポーリング中フラグ（前のリクエストが完了してから次をスケジュールするために使う）
+	friendsPolling bool
+	notifsPolling  bool
 }
 
 const errDisplayDuration = 5 * time.Second
@@ -112,6 +116,7 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case key.Matches(msg, m.keys.Help):
 			m.showHelp = !m.showHelp
+			m.distributeSize()
 			return m, nil
 
 		case key.Matches(msg, m.keys.Tab):
@@ -138,31 +143,39 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.currentUser = msg.DisplayName
 		m.currentStatus = msg.Status
 		m.currentStatusDesc = msg.StatusDescription
-		// 初回フェッチ + ポーリング開始
-		return m, tea.Batch(
-			m.vrc.FetchFriends(),
-			m.vrc.FetchNotifs(),
-			m.pollFriends(),
-			m.pollNotifs(),
-		)
+		// 初回フェッチ開始。ポーリングはレスポンス後にスケジュールする
+		m.friendsPolling = true
+		m.notifsPolling = true
+		return m, tea.Batch(m.vrc.FetchFriends(), m.vrc.FetchNotifs())
 
 	case client.FriendsMsg:
 		var cmd tea.Cmd
 		m.friends, cmd = m.friends.Update(msg)
+		// 前回フェッチが完了したので次のポーリングをスケジュール
+		if m.friendsPolling {
+			cmd = tea.Batch(cmd, m.pollFriends())
+		}
 		return m, cmd
 
 	case client.NotifsMsg:
 		var cmd tea.Cmd
 		m.notifs, cmd = m.notifs.Update(msg)
+		if m.notifsPolling {
+			cmd = tea.Batch(cmd, m.pollNotifs())
+		}
 		return m, cmd
 
 	case client.ErrMsg:
 		// 認証エラー(401)の場合はポーリングを継続しない
 		if msg.IsAuth {
+			m.friendsPolling = false
+			m.notifsPolling = false
 			m.showError(msg.Err)
+			m.distributeSize()
 			return m, tea.Batch(m.scheduleClearErr(), tea.Quit)
 		}
 		m.showError(msg.Err)
+		m.distributeSize()
 		return m, m.scheduleClearErr()
 
 	case client.StatusUpdatedMsg:
@@ -191,15 +204,17 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.vrc.UpdateStatus(string(msg.Status), msg.Desc)
 
 	case pollFriendsMsg:
-		return m, tea.Batch(m.vrc.FetchFriends(), m.pollFriends())
+		// 次のポーリングは FriendsMsg 受信後にスケジュールする（オーバーラップ防止）
+		return m, m.vrc.FetchFriends()
 
 	case pollNotifsMsg:
-		return m, tea.Batch(m.vrc.FetchNotifs(), m.pollNotifs())
+		return m, m.vrc.FetchNotifs()
 
 	case clearErrMsg:
 		// 古いタイマーが新しいエラーを消さないようシーケンス番号で確認する
 		if m.errState != nil && m.errState.seq == msg.seq {
 			m.errState = nil
+			m.distributeSize()
 		}
 		return m, nil
 	}

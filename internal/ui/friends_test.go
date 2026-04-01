@@ -66,9 +66,15 @@ func TestFriendsModelFocusGatesKeys(t *testing.T) {
 	// フォーカスなしでは j キーを無視すること
 	m.SetFocus(false)
 	before := m.SelectedFriend()
+	if before == nil {
+		t.Fatal("SelectedFriend() should be non-nil before key press")
+	}
 	m, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("j")})
 	after := m.SelectedFriend()
-	if before != nil && after != nil && before.ID != after.ID {
+	if after == nil {
+		t.Fatal("SelectedFriend() should be non-nil after key press")
+	}
+	if before.ID != after.ID {
 		t.Error("key should be ignored when not focused")
 	}
 }

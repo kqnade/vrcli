@@ -57,8 +57,7 @@ func runTUI(cmd *cobra.Command, args []string) error {
 	}
 
 	if err := vrc.LoadSession(sessionPath); err != nil {
-		fmt.Fprintln(os.Stderr, "セッションが見つかりません。先に 'vrchat auth' を実行してください。")
-		return err
+		return fmt.Errorf("セッションが見つかりません。先に 'vrchat auth' を実行してください: %w", err)
 	}
 
 	model := ui.New(vrc, cfg)

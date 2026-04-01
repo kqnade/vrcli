@@ -31,22 +31,17 @@ func TestTrustRankColors(t *testing.T) {
 		client.TrustFriend,
 	}
 
-	// 各ランクが別々の色を持つことを確認
+	// 各ランクが空でなく、かつ別々の色を持つことを確認
 	seen := map[string]client.TrustRank{}
 	for _, rank := range ranks {
 		color := string(ui.TrustRankColor(rank))
+		if color == "" {
+			t.Errorf("TrustRankColor(%d) returned empty string", rank)
+			continue
+		}
 		if prev, ok := seen[color]; ok {
 			t.Errorf("TrustRank %d and %d share color %q", rank, prev, color)
 		}
 		seen[color] = rank
 	}
-}
-
-func TestActivePaneColor(t *testing.T) {
-	// ActivePane と Pane は同じ境界文字を使うが色が異なる。
-	// 色は ANSI コードに依存するためヘッドレス環境では検証困難。
-	// ここでは NewStyles() が panic せずに完了することのみを確認する。
-	s := ui.NewStyles()
-	_ = s.ActivePane
-	_ = s.Pane
 }

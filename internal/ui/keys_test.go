@@ -3,8 +3,12 @@ package ui_test
 import (
 	"testing"
 
+	"github.com/charmbracelet/bubbles/help"
 	"github.com/kqnade/vrcli/internal/ui"
 )
+
+// コンパイル時に KeyMap が help.KeyMap インターフェースを満たすことを保証する。
+var _ help.KeyMap = ui.DefaultKeyMap
 
 func TestDefaultKeyMapShortHelp(t *testing.T) {
 	km := ui.DefaultKeyMap
@@ -36,17 +40,12 @@ func TestDefaultKeyMapFullHelp(t *testing.T) {
 	for _, g := range groups {
 		totalBindings += len(g)
 	}
-	if totalBindings < 10 {
-		t.Errorf("FullHelp() total bindings = %d, want at least 10", totalBindings)
+	// FullHelp は現在 4 グループ・合計 12 バインディングを定義している
+	// (navigation:3, pane:2, actions:4, notif:3)
+	const wantBindings = 12
+	if totalBindings != wantBindings {
+		t.Errorf("FullHelp() total bindings = %d, want %d", totalBindings, wantBindings)
 	}
 }
 
-func TestKeyMapInterfaceCompliance(t *testing.T) {
-	// KeyMap が help.KeyMap インターフェースを満たすか（ShortHelp/FullHelp が呼べる）
-	km := ui.DefaultKeyMap
-	short := km.ShortHelp()
-	full := km.FullHelp()
-	if len(short) == 0 || len(full) == 0 {
-		t.Error("KeyMap must implement both ShortHelp and FullHelp")
-	}
-}
+// TestKeyMapInterfaceCompliance はファイル先頭の var _ help.KeyMap = ... で代替済み。

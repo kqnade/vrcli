@@ -85,7 +85,8 @@ type NotifsModel struct {
 	width  int
 	height int
 
-	focused bool
+	focused  bool
+	inFlight map[string]bool // 承認/拒否リクエスト中の通知 ID
 }
 
 // NewNotifsModel は NotifsModel を初期化して返す。
@@ -99,9 +100,10 @@ func NewNotifsModel(styles Styles, keys KeyMap) NotifsModel {
 	l.Styles.Title = styles.Header
 
 	return NotifsModel{
-		list:   l,
-		keys:   keys,
-		styles: styles,
+		list:     l,
+		keys:     keys,
+		styles:   styles,
+		inFlight: make(map[string]bool),
 	}
 }
 
@@ -120,10 +122,12 @@ func (m NotifsModel) Update(msg tea.Msg) (NotifsModel, tea.Cmd) {
 		return m, cmd
 
 	case client.FriendRequestAcceptedMsg:
+		delete(m.inFlight, msg.NotifID)
 		m.removeNotif(msg.NotifID)
 		return m, nil
 
 	case client.FriendRequestRejectedMsg:
+		delete(m.inFlight, msg.NotifID)
 		m.removeNotif(msg.NotifID)
 		return m, nil
 
@@ -133,14 +137,18 @@ func (m NotifsModel) Update(msg tea.Msg) (NotifsModel, tea.Cmd) {
 		}
 		// a: フレンドリクエスト承認
 		if key.Matches(msg, m.keys.Accept) {
-			if n := m.selectedNotif(); n != nil && n.IsFriendRequest {
-				return m, func() tea.Msg { return AcceptRequestMsg{NotifID: n.ID} }
+			if n := m.selectedNotif(); n != nil && n.IsFriendRequest && !m.inFlight[n.ID] {
+				m.inFlight[n.ID] = true
+				id := n.ID
+				return m, func() tea.Msg { return AcceptRequestMsg{NotifID: id} }
 			}
 		}
 		// d: フレンドリクエスト拒否
 		if key.Matches(msg, m.keys.Reject) {
-			if n := m.selectedNotif(); n != nil && n.IsFriendRequest {
-				return m, func() tea.Msg { return RejectRequestMsg{NotifID: n.ID} }
+			if n := m.selectedNotif(); n != nil && n.IsFriendRequest && !m.inFlight[n.ID] {
+				m.inFlight[n.ID] = true
+				id := n.ID
+				return m, func() tea.Msg { return RejectRequestMsg{NotifID: id} }
 			}
 		}
 		var cmd tea.Cmd

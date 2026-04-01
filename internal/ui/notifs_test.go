@@ -28,7 +28,7 @@ func TestNotifsModelSetNotifsMsg(t *testing.T) {
 	m := newNotifsModel()
 	notifs := []client.Notif{
 		{ID: "n1", SenderUsername: "Alice", IsFriendRequest: true},
-		{ID: "n2", SenderUsername: "Bob", Type: "friendRequest"},
+		{ID: "n2", SenderUsername: "Bob", IsFriendRequest: true},
 	}
 	m, _ = m.Update(client.NotifsMsg{Notifs: notifs})
 	_ = m.View() // panic しないこと
@@ -120,15 +120,24 @@ func TestNotifsModelFriendRequestAccepted(t *testing.T) {
 	}
 	m, _ = m.Update(client.NotifsMsg{Notifs: notifs})
 
-	// 承認後は n1 が除去される
+	// n1 を承認 → リストから除去される
 	m, _ = m.Update(client.FriendRequestAcceptedMsg{NotifID: "n1"})
-	_ = m.View()
 
-	// 再度 notifs を送って n2 だけになっていることを確認
-	m, _ = m.Update(client.NotifsMsg{Notifs: []client.Notif{
-		{ID: "n2", SenderUsername: "Bob", IsFriendRequest: true},
-	}})
-	_ = m.View()
+	// 除去後、先頭アイテムは n2 のはず。
+	// フォーカスを当てて 'a' を押し、NotifID が n2 であることで n1 が消えたことを確認する。
+	m.SetFocus(true)
+	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("a")})
+	if cmd == nil {
+		t.Fatal("expected AcceptRequestMsg for n2 after n1 was removed")
+	}
+	msg := cmd()
+	ar, ok := msg.(ui.AcceptRequestMsg)
+	if !ok {
+		t.Fatalf("cmd() returned %T, want ui.AcceptRequestMsg", msg)
+	}
+	if ar.NotifID != "n2" {
+		t.Errorf("after removing n1, first item NotifID = %q, want \"n2\"", ar.NotifID)
+	}
 }
 
 func TestNotifsModelFriendRequestRejected(t *testing.T) {

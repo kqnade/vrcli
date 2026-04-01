@@ -118,7 +118,10 @@ func TestStatusModalIgnoreKeyWhenHidden(t *testing.T) {
 }
 
 func TestStatusChoicesLength(t *testing.T) {
-	if len(ui.StatusChoices) != 4 {
-		t.Errorf("StatusChoices length = %d, want 4", len(ui.StatusChoices))
+	// StatusChoices は active/joinMe/askMe/busy の 4 つ（offline は除外）
+	// この数を変える場合はモーダルの UI レイアウトも合わせて確認すること
+	const wantLen = 4
+	if len(ui.StatusChoices) != wantLen {
+		t.Errorf("StatusChoices length = %d, want %d", len(ui.StatusChoices), wantLen)
 	}
 }

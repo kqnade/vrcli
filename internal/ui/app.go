@@ -25,12 +25,13 @@ type pollFriendsMsg struct{}
 type pollNotifsMsg struct{}
 
 // clearErrMsg はエラー表示を消去するための内部メッセージ。
-type clearErrMsg struct{}
+// errSeq により古いタイマーが新しいエラーを消さないようにする。
+type clearErrMsg struct{ seq int }
 
 // errState はエラー表示の状態を保持する。
 type errState struct {
-	err       error
-	expiresAt time.Time
+	err error
+	seq int
 }
 
 // AppModel は Bubbletea のルートモデル。
@@ -55,8 +56,9 @@ type AppModel struct {
 	currentStatus     client.UserStatus
 	currentStatusDesc string
 
-	errState *errState
-	showHelp bool
+	errState   *errState
+	errSeqNext int
+	showHelp   bool
 }
 
 const errDisplayDuration = 5 * time.Second
@@ -65,8 +67,10 @@ const errDisplayDuration = 5 * time.Second
 func New(vrc *client.VRCClient, cfg *config.Config) AppModel {
 	styles := NewStyles()
 	keys := DefaultKeyMap
+	friends := NewFriendsModel(styles, keys)
+	friends.SetFocus(true) // 初期フォーカスをここで設定（Init は値レシーバのため）
 	return AppModel{
-		friends:     NewFriendsModel(styles, keys),
+		friends:     friends,
 		notifs:      NewNotifsModel(styles, keys),
 		statusModal: NewStatusModal(styles, keys),
 		help:        help.New(),
@@ -80,7 +84,6 @@ func New(vrc *client.VRCClient, cfg *config.Config) AppModel {
 
 // Init は初期コマンドを返す。セッションチェックを開始する。
 func (m AppModel) Init() tea.Cmd {
-	m.friends.SetFocus(true)
 	return m.vrc.CheckSession()
 }
 
@@ -154,6 +157,11 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 
 	case client.ErrMsg:
+		// 認証エラー(401)の場合はポーリングを継続しない
+		if msg.IsAuth {
+			m.showError(msg.Err)
+			return m, tea.Batch(m.scheduleClearErr(), tea.Quit)
+		}
 		m.showError(msg.Err)
 		return m, m.scheduleClearErr()
 
@@ -189,7 +197,10 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(m.vrc.FetchNotifs(), m.pollNotifs())
 
 	case clearErrMsg:
-		m.errState = nil
+		// 古いタイマーが新しいエラーを消さないようシーケンス番号で確認する
+		if m.errState != nil && m.errState.seq == msg.seq {
+			m.errState = nil
+		}
 		return m, nil
 	}
 
@@ -260,26 +271,30 @@ func (m AppModel) updateActivePane(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *AppModel) showError(err error) {
-	m.errState = &errState{
-		err:       err,
-		expiresAt: time.Now().Add(errDisplayDuration),
-	}
+	seq := m.errSeqNext
+	m.errSeqNext++
+	m.errState = &errState{err: err, seq: seq}
 }
 
 func (m AppModel) scheduleClearErr() tea.Cmd {
+	seq := m.errSeqNext - 1 // 直前に showError で割り当てたシーケンス番号
 	return tea.Tick(errDisplayDuration, func(_ time.Time) tea.Msg {
-		return clearErrMsg{}
+		return clearErrMsg{seq: seq}
 	})
 }
 
+const minPollInterval = 5 * time.Second
+
 func (m AppModel) pollFriends() tea.Cmd {
-	return tea.Tick(m.cfg.App.PollFriendsInterval, func(_ time.Time) tea.Msg {
+	interval := max(m.cfg.App.PollFriendsInterval, minPollInterval)
+	return tea.Tick(interval, func(_ time.Time) tea.Msg {
 		return pollFriendsMsg{}
 	})
 }
 
 func (m AppModel) pollNotifs() tea.Cmd {
-	return tea.Tick(m.cfg.App.PollNotifsInterval, func(_ time.Time) tea.Msg {
+	interval := max(m.cfg.App.PollNotifsInterval, minPollInterval)
+	return tea.Tick(interval, func(_ time.Time) tea.Msg {
 		return pollNotifsMsg{}
 	})
 }

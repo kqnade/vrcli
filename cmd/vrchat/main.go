@@ -23,17 +23,17 @@ const (
 
 func main() {
 	if err := rootCmd().Execute(); err != nil {
+		fmt.Fprintln(os.Stderr, "Error:", err)
 		os.Exit(1)
 	}
 }
 
 func rootCmd() *cobra.Command {
 	root := &cobra.Command{
-		Use:           "vrchat",
-		Short:         "VRChat TUI ダッシュボード",
-		SilenceUsage:  true,
-		SilenceErrors: true,
-		RunE:          runTUI,
+		Use:          "vrchat",
+		Short:        "VRChat TUI ダッシュボード",
+		SilenceUsage: true,
+		RunE:         runTUI,
 	}
 	root.AddCommand(authCmd(), versionCmd())
 	return root

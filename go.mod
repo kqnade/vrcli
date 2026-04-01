@@ -7,7 +7,7 @@ require (
 	github.com/charmbracelet/bubbles v0.20.0
 	github.com/charmbracelet/bubbletea v1.3.3
 	github.com/charmbracelet/lipgloss v1.0.0
-	github.com/kqnade/vrcgo v0.3.0
+	github.com/kqnade/vrcgo v0.3.1
 	github.com/spf13/cobra v1.9.1
 	golang.org/x/term v0.39.0
 )
